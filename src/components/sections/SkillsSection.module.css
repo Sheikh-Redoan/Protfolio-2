@@ -1,0 +1,165 @@
+.section {
+  width: 100%;
+  padding: 5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.heading {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 4rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
+}
+
+.skillsWrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  min-height: 600px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 0;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 500px;
+  gap: 2rem;
+  z-index: 10;
+}
+
+.centerColumn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.skillNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 10;
+}
+
+.skillLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 10, 0.8);
+  box-shadow: 0 0 15px -5px rgba(255, 255, 255, 0.1);
+  text-align: center;
+  padding: 1rem;
+  backdrop-filter: blur(8px);
+}
+
+.skillCircle {
+  width: 70px;
+  height: 70px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+
+.skillCircle:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 25px -5px var(--hover-color, rgba(255, 255, 255, 0.5));
+}
+
+.centerCircle {
+  width: 120px;
+  height: 120px;
+  border-width: 2px;
+  border-color: var(--accent-primary);
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 40px -10px var(--accent-primary);
+}
+
+.centerText {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #E1E0CC;
+  line-height: 1.2;
+}
+
+.icon {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .skillsWrapper {
+    min-height: 700px;
+  }
+  
+  .column {
+    min-height: 600px;
+  }
+  
+  .skillCircle {
+    width: 60px;
+    height: 60px;
+    padding: 0.75rem;
+  }
+  
+  .centerCircle {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .centerText {
+    font-size: 0.9rem;
+  }
+  
+  .skillLabel {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .skillCircle {
+    width: 50px;
+    height: 50px;
+    padding: 0.5rem;
+  }
+  
+  .centerCircle {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .centerText {
+    font-size: 0.75rem;
+  }
+  
+  .skillLabel {
+    display: none; /* Might be too cluttered on tiny screens */
+  }
+}
