@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-
+import ClientLayout from "@/components/layout/ClientLayout";
 import SmoothScrolling from "@/components/layout/SmoothScrolling";
 
 export const metadata: Metadata = {
@@ -20,9 +18,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <SmoothScrolling>
-          <Navbar />
-          <main style={{ minHeight: "100vh" }}>{children}</main>
-          <Footer />
+          <ClientLayout>{children}</ClientLayout>
         </SmoothScrolling>
       </body>
     </html>
