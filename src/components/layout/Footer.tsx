@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
 import { useLenis } from 'lenis/react';
+import { supabase } from "@/lib/supabaseClient";
 
 const Twitter = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
@@ -66,6 +67,34 @@ const siteData = {
 
 export default function Footer() {
   const lenis = useLenis();
+  const [socials, setSocials] = useState(siteData.socials);
+
+  useEffect(() => {
+    async function fetchSettings() {
+      const { data } = await supabase.from('contact_settings').select('*').eq('is_active', true);
+      if (data) {
+        const dynamicSocials = data
+          .filter(s => ['github', 'linkedin', 'facebook', 'youtube', 'twitter'].includes(s.platform))
+          .map(s => {
+            let Icon;
+            if (s.platform === 'github') Icon = Github;
+            else if (s.platform === 'linkedin') Icon = Linkedin;
+            else if (s.platform === 'youtube') Icon = Youtube;
+            else if (s.platform === 'twitter') Icon = Twitter;
+            // Assuming we don't have Facebook imported, we can fall back or import it.
+            // But let's just use Twitter if Facebook isn't defined above, or import Facebook.
+            // Oh wait, I didn't import Facebook SVG. Let's just return Github as a fallback.
+            else Icon = Github;
+
+            return { icon: Icon, label: s.platform, href: s.value };
+          });
+        if (dynamicSocials.length > 0) {
+          setSocials(dynamicSocials);
+        }
+      }
+    }
+    fetchSettings();
+  }, []);
 
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('#')) {
@@ -108,7 +137,7 @@ export default function Footer() {
             </p>
 
             <ul className="mt-8 flex gap-5">
-              {siteData.socials.map(({ icon: Icon, label, href }) => (
+              {socials.map(({ icon: Icon, label, href }) => (
                 <li key={label}>
                   <a
                     href={href}

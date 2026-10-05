@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Mail, Phone, Headphones } from "lucide-react";
+import { FaFacebook, FaGithub, FaLinkedin, FaYoutube } from "react-icons/fa";
+import { supabase } from "@/lib/supabaseClient";
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -759,6 +761,53 @@ export default function ContactSection({
   description = "Have a question or want to work together? Leave your details and I'll get back to you as soon as possible.",
   className,
 }: ContactWithGlobeProps) {
+  const [contactSettings, setContactSettings] = useState<any[]>([]);
+  const [formData, setFormData] = useState({ name: '', company: '', email: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+
+  useEffect(() => {
+    async function fetchSettings() {
+      const { data } = await supabase.from('contact_settings').select('*').eq('is_active', true);
+      if (data) {
+        setContactSettings(data);
+      }
+    }
+    fetchSettings();
+  }, []);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    const { error } = await supabase.from('messages').insert([{
+      name: formData.name,
+      email: formData.email,
+      subject: formData.company ? `Company: ${formData.company}` : null,
+      message: formData.message,
+    }]);
+    setIsSubmitting(false);
+    if (error) {
+        setSubmitStatus("error");
+    } else {
+        setSubmitStatus("success");
+        setFormData({ name: '', company: '', email: '', message: '' });
+    }
+  };
+
+  const getIcon = (platform: string) => {
+    switch(platform) {
+      case 'email': return Mail;
+      case 'phone': return Phone;
+      case 'github': return FaGithub;
+      case 'linkedin': return FaLinkedin;
+      case 'facebook': return FaFacebook;
+      case 'youtube': return FaYoutube;
+      default: return ArrowRight;
+    }
+  };
+
   return (
     <section id="contact"
       className={cn(
@@ -809,7 +858,7 @@ export default function ContactSection({
             </div>
 
             <div className="flex flex-col gap-3">
-              {CONTACT_LINKS.map(({ icon: Icon, label, href }, i) => (
+              {contactSettings.length === 0 ? CONTACT_LINKS.map(({ icon: Icon, label, href }, i) => (
                 <motion.a
                   key={label}
                   href={href}
@@ -828,7 +877,31 @@ export default function ContactSection({
                   </div>
                   {label}
                 </motion.a>
-              ))}
+              )) : contactSettings.map((setting, i) => {
+                const Icon = getIcon(setting.platform);
+                return (
+                  <motion.a
+                    key={setting.platform}
+                    href={setting.platform === 'email' ? `mailto:${setting.value}` : setting.platform === 'phone' ? `tel:${setting.value}` : setting.value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, x: -12 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{
+                      duration: 0.5,
+                      delay: 0.3 + i * 0.1,
+                      ease: smoothEase,
+                    }}
+                    className="group flex items-center gap-3 w-fit text-sm text-zinc-400 dark:text-zinc-400 hover:text-white dark:hover:text-white transition-colors duration-200"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-zinc-800/80 dark:bg-zinc-800/80 border border-zinc-700 dark:border-zinc-700 group-hover:border-indigo-400 dark:group-hover:border-indigo-500/40 group-hover:bg-indigo-500/10 dark:group-hover:bg-indigo-500/10 flex items-center justify-center shrink-0 transition-all duration-200">
+                      <Icon className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 group-hover:text-indigo-400 dark:group-hover:text-indigo-400 transition-colors duration-200" />
+                    </div>
+                    {setting.value}
+                  </motion.a>
+                );
+              })}
             </div>
 
             <div className="relative overflow-hidden h-52">
@@ -862,55 +935,72 @@ export default function ContactSection({
 
             <FormDots />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Jane Doe"
+                    className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({...formData, company: e.target.value})}
+                    placeholder="Acme Corp"
+                    className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mb-4">
                 <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
-                  Full Name
+                  Email Address
                 </label>
                 <input
-                  type="text"
-                  placeholder="Jane Doe"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="hello@acmecorp.com"
                   className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
                 />
               </div>
-              <div className="flex flex-col gap-2">
+
+              <div className="flex flex-col gap-2 mb-6">
                 <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
-                  Company
+                  Message
                 </label>
-                <input
-                  type="text"
-                  placeholder="Acme Corp"
-                  className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
+                <textarea
+                  required
+                  value={formData.message}
+                  onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  placeholder="Type your message here..."
+                  rows={4}
+                  className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 resize-none transition-all duration-200"
                 />
               </div>
-            </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="hello@acmecorp.com"
-                className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all duration-200"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold tracking-widest uppercase text-zinc-500 dark:text-zinc-500">
-                Message
-              </label>
-              <textarea
-                placeholder="Type your message here..."
-                rows={4}
-                className="w-full bg-zinc-800/60 dark:bg-zinc-800/60 border border-zinc-700 dark:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-200 dark:text-zinc-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-500 outline-none focus:border-indigo-400 dark:focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 resize-none transition-all duration-200"
-              />
-            </div>
-
-            <Button className="w-fit h-11 px-8 rounded-xl font-semibold text-sm bg-white hover:bg-white dark:bg-indigo-600 dark:hover:bg-indigo-700 text-black dark:text-black group border-none">
-              Submit
-              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-200 group-hover:translate-x-1" />
-            </Button>
+              <div className="flex items-center gap-4">
+                <Button type="submit" disabled={isSubmitting} className="w-fit h-11 px-8 rounded-xl font-semibold text-sm bg-white hover:bg-white dark:bg-indigo-600 dark:hover:bg-indigo-700 text-black dark:text-black group border-none">
+                  {isSubmitting ? "Sending..." : "Submit"}
+                  <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-200 group-hover:translate-x-1" />
+                </Button>
+                {submitStatus === "success" && <span className="text-green-500 text-sm">Message sent successfully!</span>}
+                {submitStatus === "error" && <span className="text-red-500 text-sm">Failed to send message. Try again.</span>}
+              </div>
+            </form>
           </motion.div>
         </div>
       </div>

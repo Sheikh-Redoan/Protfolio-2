@@ -9,6 +9,7 @@ import HomeForm from "@/components/admin/HomeForm";
 import AboutForm from "@/components/admin/AboutForm";
 import SkillsForm from "@/components/admin/SkillsForm";
 import ProjectsForm from "@/components/admin/ProjectsForm";
+import ContactForm from "@/components/admin/ContactForm";
 
 type Tab = "Home" | "About" | "Skills" | "Projects" | "Contact";
 const TABS: Tab[] = ["Home", "About", "Skills", "Projects", "Contact"];
@@ -91,6 +92,8 @@ export default function DashboardPage() {
               <SkillsForm />
             ) : activeTab === "Projects" ? (
               <ProjectsForm />
+            ) : activeTab === "Contact" ? (
+              <ContactForm />
             ) : (
               <>
                 <h3 style={{ marginBottom: "1rem", color: "#fff" }}>{activeTab} Data Fields</h3>
