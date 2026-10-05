@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import HomeForm from "@/components/admin/HomeForm";
 import AboutForm from "@/components/admin/AboutForm";
 import SkillsForm from "@/components/admin/SkillsForm";
+import ProjectsForm from "@/components/admin/ProjectsForm";
 
 type Tab = "Home" | "About" | "Skills" | "Projects" | "Contact";
 const TABS: Tab[] = ["Home", "About", "Skills", "Projects", "Contact"];
@@ -88,6 +89,8 @@ export default function DashboardPage() {
               <AboutForm />
             ) : activeTab === "Skills" ? (
               <SkillsForm />
+            ) : activeTab === "Projects" ? (
+              <ProjectsForm />
             ) : (
               <>
                 <h3 style={{ marginBottom: "1rem", color: "#fff" }}>{activeTab} Data Fields</h3>

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useLayoutEffect } from "react";
+import React, { useEffect, useRef, useState, useLayoutEffect, useMemo } from "react";
 import { useLenis } from "lenis/react";
+import { supabase } from "@/lib/supabaseClient";
 import {
   motion,
   useScroll,
@@ -23,7 +24,10 @@ import {
   Star,
   Activity,
   Compass,
+  ExternalLink,
+  Video,
 } from "lucide-react";
+import { FaGithub } from "react-icons/fa";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -34,6 +38,9 @@ interface ProjectItem {
   elev: string;
   time: string;
   desc: string;
+  live?: string;
+  git?: string;
+  video?: string;
 }
 
 const IMAGES: ProjectItem[] = [
@@ -120,14 +127,14 @@ interface CardData {
   z: number;
 }
 
-const generateOrbitCards = (): CardData[] => {
+const generateOrbitCards = (images: ProjectItem[]): CardData[] => {
   const radiusX = 42;
   const radiusY = 15;
   const radiusXSm = 30;
   const radiusYSm = 35;
-  const total = IMAGES.length;
+  const total = images.length;
 
-  return IMAGES.map((item, i) => {
+  return images.map((item, i) => {
     const angle = (i * (Math.PI * 2)) / total;
     const x = Math.cos(angle - Math.PI / 2) * radiusX;
     const y = Math.sin(angle - Math.PI / 2) * radiusY;
@@ -150,8 +157,6 @@ const generateOrbitCards = (): CardData[] => {
     };
   });
 };
-
-const CARDS = generateOrbitCards();
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
@@ -234,6 +239,23 @@ function OrbitCard({ card, progress, pointer, isSpreadActive, isMobile, onClick 
             alt={item.alt}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           />
+          <div className="absolute top-3 right-3 flex gap-2 z-30">
+            {item.live && (
+              <a href={item.live} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors cursor-pointer pointer-events-auto">
+                <ExternalLink size={14} />
+              </a>
+            )}
+            {item.git && (
+              <a href={item.git} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors cursor-pointer pointer-events-auto">
+                <FaGithub size={14} />
+              </a>
+            )}
+            {item.video && (
+              <a href={item.video} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-600 transition-colors cursor-pointer pointer-events-auto">
+                <Video size={14} />
+              </a>
+            )}
+          </div>
           <div className="absolute left-0 right-0 bottom-0 h-[60px] bg-gradient-to-t from-black/55 to-transparent flex items-center justify-between px-[14px] z-20 pointer-events-none">
             <div className="text-white">
               <div className="font-bold text-[0.85rem] md:text-[0.9rem] leading-tight">
@@ -353,7 +375,7 @@ function StackedCard({ item, i, total, scrollYProgress }: StackedCardProps) {
 
   return (
     <motion.div
-      className={`absolute top-1/2 left-1/2 w-[90vw] md:w-[80vw] max-w-5xl h-[75vh] md:h-[70vh] bg-[#0a0a0a] rounded-[24px] md:rounded-[32px] border border-[#222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col md:flex-row ${
+      className={`absolute top-1/2 left-1/2 w-[98vw] md:w-[98vw] max-w-7xl h-[75vh] md:h-[70vh] bg-[#0a0a0a] rounded-[24px] md:rounded-[32px] border border-[#222] shadow-[0_40px_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col md:flex-row ${
         isEven ? "md:flex-row" : "md:flex-row-reverse"
       }`}
       style={{ x: "-50%", y, scale, zIndex: i, transformOrigin: "top center" }}
@@ -377,9 +399,7 @@ function StackedCard({ item, i, total, scrollYProgress }: StackedCardProps) {
           className="w-full h-full object-cover opacity-70 mix-blend-lighten"
         />
         <div
-          className={`absolute inset-0 bg-gradient-to-t ${
-            isEven ? "md:bg-gradient-to-r" : "md:bg-gradient-to-l"
-          } from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent`}
+          className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/5 to-transparent`}
         />
 
         <div
@@ -387,16 +407,6 @@ function StackedCard({ item, i, total, scrollYProgress }: StackedCardProps) {
             isEven ? "left-6 md:left-10" : "right-6 md:right-10 md:text-right"
           }`}
         >
-          <div
-            className={`flex items-center gap-2 mb-2 opacity-80 ${
-              isEven ? "" : "md:justify-end"
-            }`}
-          >
-            <MapPin size={16} />
-            <span className="text-sm font-semibold tracking-wider uppercase">
-              Sheikh Redoan
-            </span>
-          </div>
           <h2 className="text-4xl md:text-6xl font-black tracking-tight">{item.alt}</h2>
         </div>
       </div>
@@ -449,9 +459,23 @@ function StackedCard({ item, i, total, scrollYProgress }: StackedCardProps) {
           </div>
         </div>
 
-        <button className="mt-8 w-full py-4 rounded-xl bg-white text-black font-black text-lg hover:bg-neutral-200 transition-colors flex items-center justify-center gap-3">
-          Explore Project <ArrowRight size={20} />
-        </button>
+        <div className="mt-8 flex flex-col lg:flex-row gap-3 w-full">
+          {item.live && (
+            <a href={item.live} target="_blank" rel="noreferrer" className="flex-1 py-3 md:py-4 rounded-xl bg-white text-black font-black text-sm md:text-base hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2">
+              <ExternalLink size={18} /> Live Demo
+            </a>
+          )}
+          {item.git && (
+            <a href={item.git} target="_blank" rel="noreferrer" className="flex-1 py-3 md:py-4 rounded-xl bg-[#24292e] text-white font-bold text-sm md:text-base hover:bg-[#2f363d] transition-colors flex items-center justify-center gap-2 border border-[#444]">
+              <FaGithub size={18} /> Source Code
+            </a>
+          )}
+          {item.video && (
+            <a href={item.video} target="_blank" rel="noreferrer" className="flex-1 py-3 md:py-4 rounded-xl bg-red-600 text-white font-bold text-sm md:text-base hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+              <Video size={18} /> Video Guide
+            </a>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -460,6 +484,7 @@ function StackedCard({ item, i, total, scrollYProgress }: StackedCardProps) {
 // ─── ProjectModal ─────────────────────────────────────────────────────────────
 
 interface ProjectModalProps {
+  cards: CardData[];
   initialIndex: number;
   onClose: () => void;
 }
@@ -484,9 +509,9 @@ function ScrollHint({ scrollYProgress }: { scrollYProgress: MotionValue<number> 
   );
 }
 
-function ProjectModal({ initialIndex, onClose }: ProjectModalProps) {
+function ProjectModal({ cards, initialIndex, onClose }: ProjectModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const totalCards = CARDS.length;
+  const totalCards = cards.length;
 
   const { scrollYProgress } = useScroll({ container: containerRef });
 
@@ -568,7 +593,7 @@ function ProjectModal({ initialIndex, onClose }: ProjectModalProps) {
         <div style={{ height: `${totalCards * 100}vh` }} className="w-full relative">
           {/* Sticky wrapper */}
           <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
-            {CARDS.map((card, i) => (
+            {cards.map((card, i) => (
               <StackedCard
                 key={card.index}
                 item={card.item}
@@ -589,10 +614,13 @@ function ProjectModal({ initialIndex, onClose }: ProjectModalProps) {
 // ─── CinematicOrbitHero ───────────────────────────────────────────────────────
 
 interface CinematicOrbitHeroProps {
+  cards: CardData[];
   onCardClick: (index: number) => void;
+  sectionTitle: string;
+  sectionSubtitle: string;
 }
 
-function CinematicOrbitHero({ onCardClick }: CinematicOrbitHeroProps) {
+function CinematicOrbitHero({ cards, onCardClick, sectionTitle, sectionSubtitle }: CinematicOrbitHeroProps) {
   const wrapRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
@@ -635,16 +663,16 @@ function CinematicOrbitHero({ onCardClick }: CinematicOrbitHeroProps) {
           style={{ opacity: textOpacity, scale: textScale }}
         >
           <h2 className="text-4xl md:text-[6vw] font-black tracking-tighter text-slate-800 dark:text-white">
-            Discover Projects.
+            {sectionTitle}
           </h2>
           <p className="mt-12 max-w-[50ch] text-sm md:text-base font-medium opacity-80 dark:opacity-60 text-slate-600 dark:text-slate-300">
-            Explore curated builds and applications. Click a project card to view full details.
+            {sectionSubtitle}
           </p>
         </motion.div>
 
         {/* Orbit cards layer */}
         <div className="absolute inset-0 z-10">
-          {CARDS.map((card) => (
+          {cards.map((card) => (
             <OrbitCard
               key={card.index}
               card={card}
@@ -680,17 +708,50 @@ function CinematicOrbitHero({ onCardClick }: CinematicOrbitHeroProps) {
 
 export default function ProjectsSection() {
   const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
+  const [projectsData, setProjectsData] = useState<ProjectItem[]>(IMAGES);
+  const [sectionTitle, setSectionTitle] = useState("Discover Projects.");
+  const [sectionSubtitle, setSectionSubtitle] = useState("Explore curated builds and applications. Click a project card to view full details.");
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: contentData } = await supabase.from("projects_content").select("*").single();
+      if (contentData) {
+        if (contentData.title) setSectionTitle(contentData.title);
+        if (contentData.subtitle) setSectionSubtitle(contentData.subtitle);
+      }
+      
+      const { data: projData } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
+      if (projData && projData.length > 0) {
+        const mapped: ProjectItem[] = projData.map((p: any) => ({
+          src: p.image_url || "",
+          alt: p.title || "",
+          dist: p.stack || "",
+          elev: p.tool || "",
+          time: p.year || "",
+          desc: p.description || "",
+          git: p.github_link || "",
+          live: p.live_link || "",
+          video: p.video_link || "",
+        }));
+        setProjectsData(mapped);
+      }
+    };
+    fetchData();
+  }, []);
+  
+  const cards = useMemo(() => generateOrbitCards(projectsData), [projectsData]);
+  
   return (
     <main
       id="projects"
       className="w-full min-h-screen bg-slate-50 selection:bg-slate-900 selection:text-white dark:selection:bg-white dark:selection:text-black dark"
     >
-      <CinematicOrbitHero onCardClick={(index) => setSelectedProjectIndex(index)} />
+      <CinematicOrbitHero cards={cards} onCardClick={(index) => setSelectedProjectIndex(index)} sectionTitle={sectionTitle} sectionSubtitle={sectionSubtitle} />
 
       <AnimatePresence>
         {selectedProjectIndex !== null && (
           <ProjectModal
+            cards={cards}
             initialIndex={selectedProjectIndex}
             onClose={() => setSelectedProjectIndex(null)}
           />
